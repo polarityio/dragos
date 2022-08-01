@@ -1,13 +1,10 @@
 const _ = require('lodash');
 const Bottleneck = require('bottleneck/es5');
-const config = require('./config/config');
-const fs = require('fs');
 const { map } = require('lodash/fp');
-const request = require('request');
-const util = require('util');
+const { setRequestWithDefaults } = require('./src/createRequestOptions');
 
 let limiter = null;
-let requestWithDefaults;
+let request;
 
 let Logger;
 
@@ -20,91 +17,9 @@ let _setupLimiter = (options) => {
   });
 };
 
-function startup(logger) {
-  let defaults = {};
+const startup = (logger) => {
   Logger = logger;
-
-  let { cert, key, passphrase, ca, proxy, rejectUnauthorized } = config.request;
-
-  if (typeof cert === 'string' && cert.length > 0) {
-    defaults.cert = fs.readFileSync(cert);
-  }
-  if (typeof key === 'string' && key.length > 0) {
-    defaults.key = fs.readFileSync(key);
-  }
-  if (typeof passphrase === 'string' && passphrase.length > 0) {
-    defaults.passphrase = passphrase;
-  }
-  if (typeof ca === 'string' && ca.length > 0) {
-    defaults.ca = fs.readFileSync(ca);
-  }
-  if (typeof proxy === 'string' && proxy.length > 0) {
-    defaults.proxy = proxy;
-  }
-  if (typeof rejectUnauthorized === 'boolean') {
-    defaults.rejectUnauthorized = rejectUnauthorized;
-  }
-
-  let _requestWithDefaults = request.defaults(defaults);
-
-  requestWithDefaults = (requestOptions) =>
-    new Promise((resolve, reject) => {
-      _requestWithDefaults(requestOptions, (err, res, body) => {
-        if (err) return reject(err);
-        let response = { ...res, body };
-
-        try {
-          checkForStatusError(response);
-        } catch (err) {
-          reject(err);
-        }
-
-        resolve(response);
-      });
-    });
-}
-
-const buildRequestOptions = (entity, options) => {
-  let fieldType;
-  let API_URL = options.url + '/v1/jobs/search';
-
-  switch (true) {
-    case entity.isURL:
-    case entity.isDomain:
-      fieldType = 'url';
-      break;
-    case entity.isSHA256:
-      fieldType = 'sha256';
-      break;
-    case entity.isMD5:
-      fieldType = 'md5';
-    default:
-      undefined;
-  }
-
-  if (fieldType) {
-    return (requestOptions = {
-      method: 'GET',
-      url: API_URL + `?field=${fieldType}&type=substring&term=${entity.value}`,
-      headers: {
-        'X-Api-Key': options.apiKey
-      },
-      json: true
-    });
-  }
-};
-
-const getCircularReplacer = () => {
-  const seen = new WeakSet();
-  return (key, value) => {
-    if (typeof value === 'object' && value !== null) {
-      if (seen.has(value)) {
-        return;
-      }
-      seen.add(value);
-    }
-    return value;
-  };
+  request = setRequestWithDefaults(Logger);
 };
 
 const doLookup = async (entities, options, callback) => {
@@ -114,84 +29,167 @@ const doLookup = async (entities, options, callback) => {
 
   try {
     const results = await Promise.all(
-      map(async (entity) => await fetchApiData(entity, options), entities)
+      map(async (entity) => {
+        const data = await fetchApiData(entity, options);
+        return polarityResponse(entity, data);
+      }, entities)
     );
-    const lookupResults = JSON.stringify(results, getCircularReplacer());
-
-    return callback(null, JSON.parse(lookupResults));
-  } catch (err) {
+    Logger.trace({ lookupResults: results });
+    return callback(null, results);
+  } catch (error) {
+    const err = parseErrorToReadableJSON(error);
+    Logger.trace({ err }, 'Err in doLookup');
     return err;
   }
 };
 
 const _fetchApiData = async (entity, options) => {
   try {
-    const requestOptions = buildRequestOptions(entity, options);
-
-    Logger.trace({ requestOptions }, 'REQUEST_OPTIONS');
-
-    response = await requestWithDefaults(requestOptions);
-
-    Logger.trace({ response }, 'REQUEST_RESPONSE');
-
-    const processedResponseData = await processResponseData(response, Logger);
-
-    const apiData = (
-      fetchResponses[processedResponseData.statusCode] || retryablePolarityResponse
-    )(entity, response);
-
-    return apiData;
+    const results = await buildResults(entity, options);
+    return results;
   } catch (err) {
     let isConnectionReset = _.get(err, 'code', '') === 'ECONNRESET';
     if (isConnectionReset) return retryablePolarityResponse(entity);
     else throw err;
   }
 };
-/*
-  This is for any data processing that may need to be done.  
-*/
-const processResponseData = async (response, Logger) => {
-  if (_.get(response, 'body')) {
-    response.body.Jobs.forEach((job) => {
-      job.Job.Score = parseInt(job.Job.Score * 100);
-    });
-  }
-  return response;
+
+const buildRequestOptions = (path, options) => {
+  return {
+    method: 'GET',
+    uri: options.url + path,
+    headers: {
+      'API-Token': options.apiToken,
+      'API-Secret': options.apiKey
+    },
+    json: true
+  };
 };
 
-const checkForStatusError = (response) => {
-  let statusCode = response.statusCode;
+const buildResults = async (entity, options) => {
+  let results = [];
+  const type = getType(entity, options);
 
-  if (![200, 429, 500, 502, 504].includes(statusCode)) {
-    let requestError = Error('Request Error');
-    requestError.status = statusCode;
-    requestError.description = JSON.stringify(response.body);
-    requestError.requestOptions = requestOptions;
-    throw requestError;
+  const indicators =
+    type === 'tag'
+      ? await indicatorsByTag(entity, options)
+      : await getIndicators(entity, type, options);
+
+  for (const indicator of indicators) {
+    const productData = await getProductsForIndicator(indicator.value, options);
+    const indicatorWithProducts = Object.assign({}, indicator, { productData });
+    results.push(indicatorWithProducts);
+  }
+  return results;
+};
+
+const getType = (entity) => {
+  let type = '';
+
+  switch (entity.type) {
+    case 'domain':
+      type = 'domain';
+      break;
+    case 'ip':
+      type = 'ip';
+      break;
+    case 'hash':
+      type = getHashType(entity);
+      break;
+    case 'custom':
+      type = getCustomType(entity);
+      break;
+    default:
+      throw new Error('Unknown type');
+  }
+  return type;
+};
+
+const getCustomType = (entity) => {
+  let type = '';
+  if (entity.types.indexOf('custom.hostname') >= 0) {
+    type = 'hostname';
+  }
+  if (entity.types.indexOf('custom.filename') >= 0) {
+    type = 'filename';
+  }
+  if (entity.types.indexOf('custom.tag') >= 0) {
+    type = 'tag';
+  }
+  return type;
+};
+
+const getHashType = (entity) => {
+  if (entity.isMD5) return 'md5';
+  if (entity.isSHA1) return 'sha1';
+  if (entity.isSHA256) return 'sha256';
+};
+
+const indicatorsByTag = async (entity, options) => {
+  try {
+    const query = `${entity.value}`;
+    const uri = `/api/v1/indicators?tags=${query}&page_size=10`;
+
+    const requestOptions = buildRequestOptions(uri, options);
+    const response = await request(requestOptions);
+
+    Logger.trace({ INDICATORS: response });
+    return response.body.indicators;
+  } catch (err) {
+    Logger.trace({ err });
+    throw err;
   }
 };
+
+const getIndicators = async (entity, type, options) => {
+  try {
+    const query = `value=${entity.value}&type=${type}`;
+    const uri = `/api/v1/indicators?${query}`;
+
+    const requestOptions = buildRequestOptions(uri, options);
+    const response = await request(requestOptions);
+
+    return response.body.indicators;
+  } catch (err) {
+    Logger.trace({ err });
+    throw err;
+  }
+};
+
+const getProductsForIndicator = async (indicatorValue, options) => {
+  try {
+    const query = `indicator=${indicatorValue}`;
+    const uri = `/api/v1/products?${query}`;
+
+    const requestOptions = buildRequestOptions(uri, options);
+    const response = await request(requestOptions);
+
+    return response.body.products;
+  } catch (err) {
+    Logger.trace({ err });
+    throw err;
+  }
+};
+
 /**
  * These functions return potential response objects the integration can return to the client
  */
-const polarityError = (err) => ({
-  detail: err.message || 'Unknown Error',
-  error: err
-});
-
-const emptyResponse = (entity) => ({
-  entity,
-  data: null
-});
-
-const polarityResponse = (entity, { body }) => ({
-  entity,
-  data: body.Jobs.length
-    ? {
-        summary: getSummary(body),
-        details: body.Jobs
-      }
-    : null
-});
+const polarityResponse = (entity, response) => {
+  Logger.trace({ RESPONSE: response });
+  return {
+    entity,
+    data:
+      response.length > 0
+        ? {
+            summary: [
+              `Indicators: ${response.length}`,
+              `Reports: ${response[0].productData.length}`
+            ],
+            details: response
+          }
+        : null
+  };
+};
 
 const retryablePolarityResponse = (entity) => {
   return {
@@ -201,22 +199,15 @@ const retryablePolarityResponse = (entity) => {
       summary: ['Lookup limit reached'],
       details: {
         summaryTag: 'Lookup limit reached',
-        errorMessage:
-          'A temporary TwinWave API search limit was reached. You can retry your search by pressing the "Retry Search" button.'
+        errorMessage: ''
       }
     }
   };
 };
 
-const fetchResponses = {
-  200: polarityResponse,
-  400: emptyResponse,
-  403: emptyResponse
-};
-
 const onMessage = (payload, options, callback) => {
   switch (payload.action) {
-    case 'RETRY_LOOKUP':
+    case 'retryLookup':
       doLookup([payload.entity], options, (err, lookupResults) => {
         if (err) {
           Logger.error({ err }, 'Error retrying lookup');
@@ -237,22 +228,22 @@ const onMessage = (payload, options, callback) => {
 const getSummary = (data) => {
   let tags = [];
 
-  if (Object.keys(data.Jobs).length > 0) {
-    let jobs = data.Jobs.length;
-    tags.push(`Total Jobs: ${jobs}`);
-
-    for (const job of data.Jobs) {
-      tags.push(`Score: ${parseInt(job.Job.Score)}`);
-      if (job.Job.Verdict.length) {
-        tags.push(`Verdict: ${job.Job.Verdict}`);
-      }
-    }
-  }
-
   return _.uniq(tags);
 };
 
-function validateOption(errors, options, optionName, errMessage) {
+const parseErrorToReadableJSON = (err) => {
+  return err instanceof Error
+    ? {
+        ...err,
+        name: err.name,
+        message: err.message,
+        stack: err.stack,
+        detail: err.message ? err.message : 'Unexpected error encountered'
+      }
+    : err;
+};
+
+function validateOption (errors, options, optionName, errMessage) {
   if (!(typeof options[optionName].value === 'string' && options[optionName].value)) {
     errors.push({
       key: optionName,
@@ -261,7 +252,7 @@ function validateOption(errors, options, optionName, errMessage) {
   }
 }
 
-function validateOptions(options, callback) {
+function validateOptions (options, callback) {
   let errors = [];
 
   validateOption(errors, options, 'url', 'You must provide an api url.');

@@ -1,105 +1,202 @@
 {{#if details.errorMessage}}
-  <div class="mt-2">
-    <div class="alert alert-danger">
+  <div class='mt-2'>
+    <div class='alert alert-danger'>
       <pre>{{details.errorMessage}}</pre>
     </div>
-
-    {{#if (not (eq details.allowRetry false))}}
-      <button
-        type="button"
-        class="p-btn btn btn-sm btn-secondary retry-btn mt-2"
-        {{action "retryLookup"}}
-      >
-        {{#if running}}
-          {{fa-icon icon="spinner-third" fixedWidth=true spin=true}}
-        {{else}}
-          Retry Search
-        {{/if}}
-      </button>
-      <div class="mt-1">
-        <span class="p-footnote">
-          You can retry your search by pressing the "Retry Search" button.</span>
-      </div>
-    {{/if}}
   </div>
 {{else}}
   {{#if details}}
-    {{#each details as |job index|}}
-      {{#if (gt index 0)}}
-        <hr />
+    {{#each details as |indicator index|}}
+      <ul class='nav nav-tabs mt-2'>
+        <li class='nav-item'>
+          <a
+            {{action 'changeTab' index 'indicator'}}
+            class='nav-link
+              {{if (or (eq indicator.__activeTab "indicator") (not activeTab)) "active"}}'
+            href='#'
+          >
+            Indicators
+          </a>
+        </li>
+        <li class='nav-item'>
+          <a
+            {{action 'changeTab' index 'reports'}}
+            class='nav-link
+              {{if (or (eq indicator.__activeTab "reports") (not activeTab)) "active"}}'
+            href='#'
+          >
+            Reports
+          </a>
+        </li>
+      </ul>
+      {{#if (eq indicator.__activeTab 'indicator')}}
+        <h1 class='p-title'>
+          {{fa-icon 'info' fixedWidth=true}}
+          Indicator
+        </h1>
+        <div class='mb-1'>
+          {{#if indicator.severity}}
+            <div>
+              <span class='p-key'>Severity: </span>
+              <span class='p-value'>{{indicator.severity}}</span>
+            </div>
+          {{/if}}
+          {{#if indicator.confidence}}
+            <div>
+              <span class='p-key'>Confidence: </span>
+              <span class='p-value'>{{indicator.confidence}}</span>
+            </div>
+          {{/if}}
+          {{#if indicator.status}}
+            <div>
+              <span class='p-key'>Status: </span>
+              <span class='p-value'>{{indicator.status}}</span>
+            </div>
+          {{/if}}
+          {{#if indicator.value}}
+            <div>
+              <span class='p-key'>Value: </span>
+              <span class='p-value'>{{indicator.value}}</span>
+            </div>
+          {{/if}}
+          {{#if indicator.comment}}
+            <div>
+              <span class='p-key'>Comment: </span>
+              <span class='p-value'>{{indicator.comment}}</span>
+            </div>
+          {{/if}}
+          {{#if indicator.first_seen}}
+            <div>
+              <span class='p-key'>First Seen: </span>
+              <span class='p-value'>{{moment-format
+                  indicator.first_seen
+                  timeZone=timezone
+                }}</span>
+            </div>
+          {{/if}}
+          {{#if indicator.last_seen}}
+            <div>
+              <span class='p-key'>Last Seen: </span>
+              <span class='p-value'>{{moment-format
+                  indicator.last_seen
+                  timeZone=timezone
+                }}</span>
+            </div>
+          {{/if}}
+          {{#if indicator.update_at}}
+            <div>
+              <span class='p-key'>Value: </span>
+              <span class='p-value'>{{moment-format
+                  indicator.updated_at
+                  timeZone=timezone
+                }}</span>
+            </div>
+          {{/if}}
+
+          <div class='info'>
+            {{#if indicator.attack_techniques}}
+              <h1>Attack Techniques:</h1>
+              {{#each indicator.attack_techniques as |attack|}}
+                <span class='tag'>{{attack}}</span>
+              {{/each}}
+            {{/if}}
+          </div>
+
+          <div class='info'>
+            {{#if indicator.ics_attack_techniques}}
+              <h1>ICS Attack Techniques:</h1>
+              {{#each indicator.ics_attack_techniques as |attack|}}
+                <span class='tag'>{{attack}}</span>
+              {{/each}}
+            {{/if}}
+          </div>
+
+          <div class='info'>
+            {{#if indicator.pre_attack_techniques}}
+              <h1>Pre-Attack Techniques:</h1>
+              {{#each indicator.pre_attack_techniques as |attack|}}
+                <span class='tag'>{{attack}}</span>
+              {{/each}}
+            {{/if}}
+          </div>
+        </div>
       {{/if}}
 
-      <div class="mt-1">
-        <a class="p-link" href="https://app.twinwave.io/job/{{job.Job.ID}}">View Job in
-          TwinWave
-          {{fa-icon icon="external-link-square" class="external-link-icon"}}</a>
-      </div>
+      {{#if (eq indicator.__activeTab 'reports')}}
+        <h1 class='p-title'>
+          {{fa-icon 'info' fixedWidth=true}}
+          Reports
+        </h1>
+        {{#each indicator.productData as |product|}}
+          <div class='mb-1'>
+            {{#if (eq product.tlp_level 'WHITE')}}
+              <div>
+                <span class='p-key'>TLP: </span>
+                <span class='p-value'>WHITE</span>
+              </div>
+            {{/if}}
+            {{#if (eq product.tlp_level 'GREEN')}}
+              <div>
+                <span class='p-key'>TLP: </span>
+                <span class='p-value' style='color:green'>GREEN</span>
+              </div>
+            {{/if}}
+            {{#if (eq product.tlp_level 'AMBER')}}
+              <div>
+                <span class='p-key'>TLP: </span>
+                <span class='p-value' style='color:orange'>AMBER</span>
+              </div>
+            {{/if}}
+            {{#if (eq product.tlp_level 'RED')}}
+              <div>
+                <span class='p-key'>TLP: </span>
+                <span class='p-value' style='color:red'>RED</span>
+              </div>
+            {{/if}}
+            {{#if product.title}}
+              <div>
+                <span class='p-key'>Title: </span>
+                <span class='p-value'>{{product.title}}</span>
+              </div>
+            {{/if}}
+            {{#if product.threat_level}}
+              <div>
+                <span class='p-key'>Threat: </span>
+                <span class='p-value'>{{product.threat_level}}</span>
+              </div>
+            {{/if}}
+            {{#if product.type}}
+              <div>
+                <span class='p-key'>Type: </span>
+                <span class='p-value'>{{product.type}}</span>
+              </div>
+            {{/if}}
+            {{#if product.release_date}}
+              <div>
+                <span class='p-key'>Release Date: </span>
+                <span class='p-value'>{{moment-format
+                    product.release_date
+                    timeZone=timezone
+                  }}</span>
+              </div>
 
-      <div class="score">
-        <span class="p-key">Consolidated Score: </span>
-        <span class="p-value">{{job.Job.Score}}</span>
-      </div>
+              {{#if product.executive_summary}}
+                <div class='executive-summary'>
+                  <span class='p-key'>Executive Summary: </span>
+                  <span class='p-value'>{{{product.executive_summary}}}</span>
+                </div>
+              {{/if}}
 
-      {{#if (get expandableTitleStates index)}}
-        <a
-          href="#"
-          class="expandable-title"
-          {{on "click" (action "toggleExpandableTitle" index)}}
-        >
-          <span class="text">Resources Analyzed #{{index}}:</span>
-          {{fa-icon "angle-up"}}
-        </a>
-
-        {{#each job.Job.URLs as |url|}}
-          <div class="info-block">
-            <div>
-              <span class="p-key">URL: </span>
-              <span class="p-value">{{url.URL}}</span>
-            </div>
-            <div>
-              <span class="p-key">Hostname: </span>
-              <span class="p-value">{{url.Hostname}}</span>
-            </div>
-            <div>
-              <span class="p-key">MD5: </span>
-              <span class="p-value">{{url.MD5}}</span>
-            </div>
+              <span class='p-key'>Tags: </span>
+              {{#each product.tags as |tag|}}
+                <div>
+                  <span class='tag'>[{{tag.text}}</span>
+                  <span class='tag'>{{tag.tag_type}}]</span>
+                </div>
+              {{/each}}
+            {{/if}}
           </div>
         {{/each}}
-
-        {{#each job.Job.Files as |file|}}
-          <div class="info-block">
-            <div>
-              <span class="p-key">Name: </span>
-              <span class="p-value">{{file.Name}}</span>
-            </div>
-            <div>
-              <span class="p-key">MD5: </span>
-              <span class="p-value">{{file.MD5}}</span>
-            </div>
-            <div>
-              <span class="p-key">SHA256: </span>
-              <span class="p-value">{{file.SHA256}}</span>
-            </div>
-            <div>
-              <span class="p-key">MimeType: </span>
-              <span class="p-value">{{file.MimeType}}</span>
-            </div>
-            <div>
-              <span class="p-key">Size: </span>
-              <span class="p-value">{{file.Size}}</span>
-            </div>
-          </div>
-        {{/each}}
-      {{else}}
-        <a
-          href="#"
-          class="expandable-title"
-          {{on "click" (action "toggleExpandableTitle" index)}}
-        >
-          <span class="text">Resources Analyzed #{{index}}:</span>
-          {{fa-icon "angle-down"}}
-        </a>
       {{/if}}
     {{/each}}
   {{/if}}

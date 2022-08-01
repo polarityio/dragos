@@ -5,7 +5,7 @@ module.exports = {
    * @type String
    * @required
    */
-  name: 'TwinWave',
+  name: 'Dragos',
   /**
    * The acronym that appears in the notification window when information from this integration
    * is displayed.  Note that the acronym is included as part of each "tag" in the summary information
@@ -15,7 +15,7 @@ module.exports = {
    * @type String
    * @required
    */
-  acronym: 'TWIN',
+  acronym: 'DRG',
   /**
    * Description for this integration which is displayed in the Polarity integrations user interface
    *
@@ -23,8 +23,22 @@ module.exports = {
    * @optional
    */
   description:
-    'The TwinWave Polarity Integration searches the TwinWave API for Attack Chain data for Domains, URLs, IPs, SHA256 Hashes and MD5 Hashes for phishing related activity and a Score Assessment.',
-  entityTypes: ['domain', 'url', 'sha256', 'md5'],
+    'The Dragos Polarity Integration searches the Dragos WorldView API for information on custom Filenames, Hostnames, Domains, URLs, IPs, SHA1, SHA256 and MD5 hashes.',
+  entityTypes: ['domain', 'url', 'sha1', 'sha256', 'md5'],
+  customTypes: [
+    // {
+    //   key: 'filename',
+    //   regex: /^(.+)\/([^\/]+)$/
+    // },
+    // {
+    //   key: 'hostname',
+    //   regex: /(.+?)(?=\.)/
+    // },
+    {
+      key: 'tag',
+      regex: /^\w{1,40}$/
+    }
+  ],
   onDemandOnly: true,
   defaultColor: 'light-purple',
   /**
@@ -61,7 +75,7 @@ module.exports = {
     // Provide the key passphrase if required.  Leave an empty string to ignore this option.
     // Relative paths are relative to the UrlScan integration's root directory
     passphrase: '',
-    // Provide the Certificate Authority. Leave an empty string to ignore this option.
+    // Provide the Cercificate Authority. Leave an empty string to ignore this option.
     // Relative paths are relative to the UrlScan integration's root directory
     ca: '',
     // An HTTP proxy to be used. Supports proxy Auth with Basic Auth, identical to support for
@@ -71,7 +85,7 @@ module.exports = {
     rejectUnauthorized: true
   },
   logging: {
-    level: 'info' //trace, debug, info, warn, error, fatal
+    level: 'trace' //trace, debug, info, warn, error, fatal
   },
   /**
    * Options that are displayed to the user/admin in the Polarity integration user-interface.  Should be structured
@@ -84,18 +98,25 @@ module.exports = {
     {
       key: 'url',
       name: 'API Url',
-      description:
-        'API Url for TwinWave allows searching indicators via the TwinWave API ',
-      default: 'https://api.twinwave.io',
+      description: 'URL for Dragos WorldView API',
+      default: 'https://portal.dragos.com',
       type: 'text',
+      userCanEdit: true,
+      adminOnly: false
+    },
+    {
+      key: 'apiToken',
+      name: 'API Token',
+      description: 'Token for Dragos WoldView API',
+      default: '',
+      type: 'password',
       userCanEdit: true,
       adminOnly: false
     },
     {
       key: 'apiKey',
       name: 'API Key',
-      description:
-        'API Key provided by TwinWave allows access to make searches using the TwinWave API. ',
+      description: 'API key for Dragos WoldView API',
       default: '',
       type: 'password',
       userCanEdit: true,

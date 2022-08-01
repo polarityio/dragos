@@ -1,23 +1,23 @@
 {
-  "main": "./integration.js",
-  "name": "twinwave",
+  "name": "dragos",
   "version": "3.0.0-beta",
-  "private": true,
-  "jest": {
-    "automock": false,
-    "resetMocks": false
+  "description": "",
+  "main": "integration.js",
+  "directories": {
+    "test": "test"
   },
   "scripts": {
-    "test": "jest"
+    "test": "npm run jest"
   },
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "bottleneck": "^2.19.5",
-    "circular-json": "^0.5.9",
+    "htmlparser2": "^8.0.1",
+    "i": "^0.3.7",
+    "jsdom": "^20.0.0",
     "lodash": "^4.17.21",
-    "request": "^2.88.2"
-  },
-  "devDependencies": {
-    "jest": "^27.4.3",
-    "nock": "^13.2.1"
+    "node-cache": "^5.1.2",
+    "npm": "^8.14.0",
+    "postman-request": "^2.88.1-postman.31"
   }
 }

@@ -2,13 +2,34 @@
 
 polarity.export = PolarityComponent.extend({
   details: Ember.computed.alias('block.data.details'),
+  productData: {},
   expandableTitleStates: {},
+  showReports: {},
   actions: {
+    changeTab: function (index, tabName) {
+      this.set(`details.${index}.__activeTab`, tabName);
+      console.log(this.get(`details.${index}.__activeTab`));
+    },
+    toggleExpandableTitle: function (index) {
+      const modifiedExpandableTitleStates = Object.assign(
+        {},
+        this.get('expandableTitleStates'),
+        {
+          [index]: !this.get('expandableTitleStates')[index]
+        }
+      );
+
+      this.set(`expandableTitleStates`, modifiedExpandableTitleStates);
+    },
+    showReports: function (index, tabName) {
+      this.set('activeTab', tabName);
+      this.toggleProperty('details.' + index + '.__showReports');
+    },
     retryLookup: function () {
       this.set('running', true);
       this.set('errorMessage', '');
       const payload = {
-        action: 'RETRY_LOOKUP',
+        action: 'retryLookup',
         entity: this.get('block.entity')
       };
       this.sendIntegrationMessage(payload)
@@ -22,16 +43,11 @@ polarity.export = PolarityComponent.extend({
         .finally(() => {
           this.set('running', false);
         });
-    },
-    toggleExpandableTitle: function (index) {
-      const modifiedExpandableTitleStates = Object.assign(
-        {},
-        this.get('expandableTitleStates'),
-        {
-          [index]: !this.get('expandableTitleStates')[index]
-        }
-      );
-      this.set(`expandableTitleStates`, modifiedExpandableTitleStates);
     }
   }
 });
+[
+  {
+    productData: [{}]
+  }
+];

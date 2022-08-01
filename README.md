@@ -1,22 +1,24 @@
-# Polarity TwinWave Integration
+# Polarity Dragos Integration
 
-TwinWave is a threat analysis platform that seamlessly integrates best of breed open source projects, third party commercial solutions and their own technology in a purpose built application that fully automates the steps an experienced security analyst or researcher would follow to analyze a suspected threat.
+Dragos is a threat analysis platform that seamlessly integrates best of breed open source projects, third party commercial solutions and their own technology in a purpose built application that fully automates the steps an experienced security analyst or researcher would follow to analyze a suspected threat.
 
-The TwinWave Polarity Integration searches the TwinWave API for Attack Chain data for Domains, URLs, IPs, SHA256 Hashes and MD5 Hashes for phishing related activity and a Score Assessment.
+The Dragos Polarity Integration searches the Dragos API for Attack Chain data for Domains, URLs, IPs, SHA256 Hashes and MD5 Hashes for phishing related activity and a Score Assessment.
 
-<img width="350" alt="Integration Example" src="./assets/twinwave.png">
+To learn more about Dragos, please visit https://www.dragos.com/
 
-To learn more about TwinWave, please visit https://www.twinwave.io/
+## Dragos Integration Options
 
-## TwinWave Integration Options
+### Dragos API Url
 
-### TwinWave API Url
+API Url for Dragos allows searching indicators via the Dragos API.
 
-API Url for TwinWave allows searching indicators via the TwinWave API
+### API Token
+
+API Token provided by Dragos allows access to make searches using the Dragos API. An API token can be generated in the Dragos user dashboard.
 
 ### API Key
 
-API Key provided by TwinWave allows access to make searches using the TwinWave API.
+API Key provided by Dragos allows access to make searches using the Dragos API. An API key can be generated in the Dragos user dashboard.
 
 ### Max Concurrent Search Requests
 
