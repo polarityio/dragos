@@ -34,7 +34,6 @@ const doLookup = async (entities, options, callback) => {
         return polarityResponse(entity, data);
       }, entities)
     );
-    Logger.trace({ lookupResults: results });
     return callback(null, results);
   } catch (error) {
     const err = parseErrorToReadableJSON(error);
@@ -68,12 +67,14 @@ const buildRequestOptions = (path, options) => {
 
 const buildResults = async (entity, options) => {
   let results = [];
-  const type = getType(entity, options);
+  let indicators;
 
-  const indicators =
-    type === 'tag'
-      ? await indicatorsByTag(entity, options)
-      : await getIndicators(entity, type, options);
+  if (entity.types.includes('custom.tag')) {
+    indicators = await getIndicatorsByTag(entity, options);
+  } else {
+    const entityTypes = transformType(entity, options);
+    indicators = await getIndicators(entityTypes, entity, options);
+  }
 
   for (const indicator of indicators) {
     const productData = await getProductsForIndicator(indicator.value, options);
@@ -83,40 +84,37 @@ const buildResults = async (entity, options) => {
   return results;
 };
 
-const getType = (entity) => {
-  let type = '';
+const transformType = (entity) => {
+  let types = [];
 
-  switch (entity.type) {
-    case 'domain':
-      type = 'domain';
-      break;
-    case 'ip':
-      type = 'ip';
-      break;
-    case 'hash':
-      type = getHashType(entity);
-      break;
-    case 'custom':
-      type = getCustomType(entity);
-      break;
-    default:
-      throw new Error('Unknown type');
+  for (const type of entity.types) {
+    switch (type) {
+      case 'domain':
+        types.push('domain');
+        break;
+      case 'ip':
+      case 'IPv4':
+      case 'IPv6':
+      case 'IP':
+        types.push('ip');
+        break;
+      case 'hash':
+      case 'SHA256':
+      case 'SHA1':
+      case 'MD5':
+        types.push(getHashType(entity));
+        break;
+      case 'custom.filename':
+        types.push('filename');
+        break;
+      case 'custom.hostname':
+        types.push('hostname');
+        break;
+      default:
+        throw new Error('Unknown type');
+    }
   }
-  return type;
-};
-
-const getCustomType = (entity) => {
-  let type = '';
-  if (entity.types.indexOf('custom.hostname') >= 0) {
-    type = 'hostname';
-  }
-  if (entity.types.indexOf('custom.filename') >= 0) {
-    type = 'filename';
-  }
-  if (entity.types.indexOf('custom.tag') >= 0) {
-    type = 'tag';
-  }
-  return type;
+  return types;
 };
 
 const getHashType = (entity) => {
@@ -125,7 +123,7 @@ const getHashType = (entity) => {
   if (entity.isSHA256) return 'sha256';
 };
 
-const indicatorsByTag = async (entity, options) => {
+const getIndicatorsByTag = async (entity, options) => {
   try {
     const query = `${entity.value}`;
     const uri = `/api/v1/indicators?tags=${query}&page_size=10`;
@@ -133,7 +131,6 @@ const indicatorsByTag = async (entity, options) => {
     const requestOptions = buildRequestOptions(uri, options);
     const response = await request(requestOptions);
 
-    Logger.trace({ INDICATORS: response });
     return response.body.indicators;
   } catch (err) {
     Logger.trace({ err });
@@ -141,13 +138,21 @@ const indicatorsByTag = async (entity, options) => {
   }
 };
 
-const getIndicators = async (entity, type, options) => {
+const getIndicators = async (entityTypes, entity, options) => {
   try {
-    const query = `value=${entity.value}&type=${type}`;
-    const uri = `/api/v1/indicators?${query}`;
+    let response;
 
-    const requestOptions = buildRequestOptions(uri, options);
-    const response = await request(requestOptions);
+    for (const type of entityTypes) {
+      const query = `value=${entity.value}&type=${type}`;
+      const uri = `/api/v1/indicators?${query}`;
+
+      const requestOptions = buildRequestOptions(uri, options);
+      response = await request(requestOptions);
+
+      if (response.body.indicators.length > 0) {
+        return response.body.indicators;
+      }
+    }
 
     return response.body.indicators;
   } catch (err) {
@@ -175,7 +180,7 @@ const getProductsForIndicator = async (indicatorValue, options) => {
  * These functions return potential response objects the integration can return to the client
  */
 const polarityResponse = (entity, response) => {
-  Logger.trace({ RESPONSE: response });
+  Logger.trace({ POLARITY_RESPONSE: response });
   return {
     entity,
     data:

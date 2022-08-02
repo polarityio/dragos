@@ -24,16 +24,16 @@ module.exports = {
    */
   description:
     'The Dragos Polarity Integration searches the Dragos WorldView API for information on custom Filenames, Hostnames, Domains, URLs, IPs, SHA1, SHA256 and MD5 hashes.',
-  entityTypes: ['domain', 'url', 'sha1', 'sha256', 'md5'],
+  entityTypes: ['domain', 'url', 'sha1', 'sha256', 'md5', 'ip'],
   customTypes: [
-    // {
-    //   key: 'filename',
-    //   regex: /^(.+)\/([^\/]+)$/
-    // },
-    // {
-    //   key: 'hostname',
-    //   regex: /(.+?)(?=\.)/
-    // },
+    {
+      key: 'filename',
+      regex: /^.*\.(jpg|JPG|gif|GIF|doc|DOC|pdf|PDF|docx|DOCX|db|DBsys|SYS|exe|EXE|dll|DLL|pdf|PDF|file|FILE|virus|VIRUS|dontopen|DONTOPEN|zip|ZIP|doc|DOC|php|PHP|hta|HTA|bat|BAT|pem|PEM|txt|TXT|dat|DAT|docx|DOCX|msg|MSG|db|DB|lnk|LNK|jpg|JPG|dotm|DOTM|log|LOG|py|PY|xls|XLS|ps1|PS1|vbe|VBE|css|CSS|site|SITE|store|STORE|world|WORLD|email|EMAIL|group|GROUP|tools|TOOLS|vip|VIP|services|SERVICES|rocks|ROCKS|download|DOWNLOAD|online|ONLINE|network|NETWORK|vin|VIN|club|CLUB|wiki|WIKI|vbs|VBS|ini|INI|top|TOP|gdn|GDN|bid|BID|tech|TECH|html|HTML|cloud|CLOUD|win|WIN|energy|ENERGY|support|SUPPORT|date|DATE|app|APP|xyz|XYZ|desi|DESI|software|SOFTWARE|kim|KIM)$/
+    },
+    {
+      key: 'hostname',
+      regex: /(.+?)(?=\.)/
+    },
     {
       key: 'tag',
       regex: /^\w{1,40}$/

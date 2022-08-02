@@ -25,6 +25,8 @@ const setRequestWithDefaults = (Logger) => {
 
   requestWithDefaults = (requestOptions) =>
     new Promise((resolve, reject) => {
+      Logger.trace({ requestOptions }, 'Request Options');
+
       _defaultsRequest(requestOptions, (err, res, body) => {
         Logger.trace({ requestOptions }, 'Request Options');
         if (err) return reject(err);
@@ -38,7 +40,7 @@ const setRequestWithDefaults = (Logger) => {
           Logger.trace({ err });
           reject(err);
         }
-        
+
         resolve(response);
       });
     });
