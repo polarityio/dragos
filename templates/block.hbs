@@ -29,7 +29,7 @@
           </a>
         </li>
       </ul>
-      {{#if (eq indicator.__activeTab 'indicator')}}
+      {{#if (or (eq indicator.__activeTab 'indicator') (not indicator.__activeTab))}}
         <h1 class='p-title'>
           {{fa-icon 'info' fixedWidth=true}}
           Indicator
