@@ -77,7 +77,8 @@ const buildResults = async (entity, options) => {
   }
 
   for (const indicator of indicators) {
-    const productData = await getProductsForIndicator(indicator.value, options);
+    const data = await getProductsForIndicator(indicator.value, options);
+    const productData = _.orderBy(data, 'release_date', 'desc');
     const indicatorWithProducts = Object.assign({}, indicator, { productData });
     results.push(indicatorWithProducts);
   }
@@ -186,10 +187,7 @@ const polarityResponse = (entity, response) => {
     data:
       response.length > 0
         ? {
-            summary: [
-              `Indicators: ${response.length}`,
-              `Reports: ${response[0].productData.length}`
-            ],
+            summary: getSummary(response),
             details: response
           }
         : null
@@ -230,8 +228,16 @@ const onMessage = (payload, options, callback) => {
   }
 };
 
-const getSummary = (data) => {
+const getSummary = (response) => {
   let tags = [];
+
+  if (response && response.length > 0) {
+    tags.push(`Indicators: ${response.length}`);
+  }
+
+  if (response && response.length && response[0].productData) {
+    tags.push(`Reports: ${response[0].productData.length}`);
+  }
 
   return _.uniq(tags);
 };
