@@ -28,7 +28,7 @@ module.exports = {
   customTypes: [
     {
       key: 'filename',
-      regex: /^.*\.(jpg|JPG|gif|GIF|doc|DOC|pdf|PDF|docx|DOCX|db|DBsys|SYS|exe|EXE|dll|DLL|pdf|PDF|file|FILE|virus|VIRUS|dontopen|DONTOPEN|zip|ZIP|doc|DOC|php|PHP|hta|HTA|bat|BAT|pem|PEM|txt|TXT|dat|DAT|docx|DOCX|msg|MSG|db|DB|lnk|LNK|jpg|JPG|dotm|DOTM|log|LOG|py|PY|xls|XLS|ps1|PS1|vbe|VBE|css|CSS|site|SITE|store|STORE|world|WORLD|email|EMAIL|group|GROUP|tools|TOOLS|vip|VIP|services|SERVICES|rocks|ROCKS|download|DOWNLOAD|online|ONLINE|network|NETWORK|vin|VIN|club|CLUB|wiki|WIKI|vbs|VBS|ini|INI|top|TOP|gdn|GDN|bid|BID|tech|TECH|html|HTML|cloud|CLOUD|win|WIN|energy|ENERGY|support|SUPPORT|date|DATE|app|APP|xyz|XYZ|desi|DESI|software|SOFTWARE|kim|KIM)$/
+      regex: /^.*\.(jpg|gif|doc|pdf|docx|db|dbsys|sys|exe|dll|file|virus|dontopen|zip|php|hta|bat|pem|txt|dat|msg|lnk|dotm|log|py|xls|ps1|vbe|VBE|css|CSS|site|store|world|email|group|tools|vip|services|rocks|download|online|network|vin|club|wiki|vbs|ini|top|gdn|bid|tech|html|cloud|win|energy|support|date|app|xyz|desi|software|kim)$/
     },
     {
       key: 'hostname',
