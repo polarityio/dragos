@@ -98,11 +98,11 @@ module.exports = {
     {
       key: 'url',
       name: 'API Url',
-      description: 'URL for Dragos WorldView API',
+      description: 'URL for Dragos WorldView API.  The default value is \'https://portal.dragos.com\'',
       default: 'https://portal.dragos.com',
       type: 'text',
-      userCanEdit: true,
-      adminOnly: false
+      userCanEdit: false,
+      adminOnly: true
     },
     {
       key: 'apiToken',
@@ -110,8 +110,8 @@ module.exports = {
       description: 'Token for Dragos WoldView API',
       default: '',
       type: 'password',
-      userCanEdit: true,
-      adminOnly: false
+      userCanEdit: false,
+      adminOnly: true
     },
     {
       key: 'apiKey',
@@ -119,8 +119,8 @@ module.exports = {
       description: 'API key for Dragos WoldView API',
       default: '',
       type: 'password',
-      userCanEdit: true,
-      adminOnly: false
+      userCanEdit: false,
+      adminOnly: true
     },
     {
       key: 'maxConcurrent',
