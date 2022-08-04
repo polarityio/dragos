@@ -37,7 +37,6 @@ const setRequestWithDefaults = (Logger) => {
         try {
           checkForStatusError(response, requestOptions, Logger);
         } catch (err) {
-          Logger.trace({ err });
           reject(err);
         }
 

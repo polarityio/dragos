@@ -38,7 +38,7 @@ const doLookup = async (entities, options, callback) => {
   } catch (error) {
     const err = parseErrorToReadableJSON(error);
     Logger.trace({ err }, 'Err in doLookup');
-    return err;
+    return callback(err);
   }
 };
 
@@ -47,9 +47,7 @@ const _fetchApiData = async (entity, options) => {
     const results = await buildResults(entity, options);
     return results;
   } catch (err) {
-    let isConnectionReset = _.get(err, 'code', '') === 'ECONNRESET';
-    if (isConnectionReset) return retryablePolarityResponse(entity);
-    else throw err;
+    throw err;
   }
 };
 
@@ -69,20 +67,24 @@ const buildResults = async (entity, options) => {
   let results = [];
   let indicators;
 
-  if (entity.types.includes('custom.tag')) {
-    indicators = await getIndicatorsByTag(entity, options);
-  } else {
-    const entityTypes = transformType(entity, options);
-    indicators = await getIndicators(entityTypes, entity, options);
-  }
+  try {
+    if (entity.types.includes('custom.tag')) {
+      indicators = await getIndicatorsByTag(entity, options);
+    } else {
+      const entityTypes = transformType(entity, options);
+      indicators = await getIndicators(entityTypes, entity, options);
+    }
 
-  for (const indicator of indicators) {
-    const data = await getProductsForIndicator(indicator.value, options);
-    const productData = _.orderBy(data, 'release_date', 'desc');
-    const indicatorWithProducts = Object.assign({}, indicator, { productData });
-    results.push(indicatorWithProducts);
+    for (const indicator of indicators) {
+      const data = await getProductsForIndicator(indicator.value, options);
+      const productData = _.orderBy(data, 'release_date', 'desc');
+      const indicatorWithProducts = Object.assign({}, indicator, { productData });
+      results.push(indicatorWithProducts);
+    }
+    return results;
+  } catch (err) {
+    throw err;
   }
-  return results;
 };
 
 const transformType = (entity) => {
@@ -154,7 +156,6 @@ const getIndicators = async (entityTypes, entity, options) => {
         return response.body.indicators;
       }
     }
-
     return response.body.indicators;
   } catch (err) {
     Logger.trace({ err });
@@ -181,7 +182,6 @@ const getProductsForIndicator = async (indicatorValue, options) => {
  * These functions return potential response objects the integration can return to the client
  */
 const polarityResponse = (entity, response) => {
-  Logger.trace({ POLARITY_RESPONSE: response });
   return {
     entity,
     data:
