@@ -37,7 +37,7 @@ const doLookup = async (entities, options, callback) => {
     return callback(null, results);
   } catch (error) {
     const err = parseErrorToReadableJSON(error);
-    Logger.trace({ err }, 'Err in doLookup');
+    Logger.error({ err }, 'Err in doLookup');
     return callback(err);
   }
 };
@@ -48,7 +48,10 @@ const _fetchApiData = async (entity, options) => {
     return results;
   } catch (err) {
     let isConnectionReset = _.get(err, 'code', '') === 'ECONNRESET';
-    if (isConnectionReset) return retryablePolarityResponse(entity);
+    if (isConnectionReset) {
+      return retryablePolarityResponse(entity);
+    }
+    throw err;
   }
 };
 
@@ -84,7 +87,6 @@ const buildResults = async (entity, options) => {
     }
     return results;
   } catch (err) {
-    Logger.error({ err });
     throw err;
   }
 };
@@ -115,10 +117,13 @@ const transformType = (entity) => {
       case 'custom.hostname':
         types.push('hostname');
         break;
-      default:
-        throw new Error('Unknown type');
     }
   }
+
+  if (types.length === 0) {
+    throw new Error('Unknown type');
+  }
+
   return types;
 };
 
@@ -138,7 +143,6 @@ const getIndicatorsByTag = async (entity, options) => {
 
     return response.body.indicators;
   } catch (err) {
-    Logger.trace({ err });
     throw err;
   }
 };
@@ -160,7 +164,6 @@ const getIndicators = async (entityTypes, entity, options) => {
     }
     return response.body.indicators;
   } catch (err) {
-    Logger.trace({ err });
     throw err;
   }
 };
@@ -257,7 +260,7 @@ const parseErrorToReadableJSON = (err) => {
     : err;
 };
 
-function validateOption (errors, options, optionName, errMessage) {
+function validateOption(errors, options, optionName, errMessage) {
   if (!(typeof options[optionName].value === 'string' && options[optionName].value)) {
     errors.push({
       key: optionName,
@@ -266,7 +269,7 @@ function validateOption (errors, options, optionName, errMessage) {
   }
 }
 
-function validateOptions (options, callback) {
+function validateOptions(options, callback) {
   let errors = [];
 
   validateOption(errors, options, 'url', 'You must provide an api url.');
