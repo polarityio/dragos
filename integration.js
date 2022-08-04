@@ -47,7 +47,8 @@ const _fetchApiData = async (entity, options) => {
     const results = await buildResults(entity, options);
     return results;
   } catch (err) {
-    throw err;
+    let isConnectionReset = _.get(err, 'code', '') === 'ECONNRESET';
+    if (isConnectionReset) return retryablePolarityResponse(entity);
   }
 };
 
@@ -83,6 +84,7 @@ const buildResults = async (entity, options) => {
     }
     return results;
   } catch (err) {
+    Logger.error({ err });
     throw err;
   }
 };
@@ -202,7 +204,8 @@ const retryablePolarityResponse = (entity) => {
       summary: ['Lookup limit reached'],
       details: {
         summaryTag: 'Lookup limit reached',
-        errorMessage: ''
+        errorMessage:
+          'A temporary Dragos API search limit was reached. You can retry your search by pressing the "Retry Search" button.'
       }
     }
   };

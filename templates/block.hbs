@@ -3,6 +3,23 @@
     <div class='alert alert-danger'>
       <pre>{{details.errorMessage}}</pre>
     </div>
+    {{#if (not (eq details.allowRetry false))}}
+      <button
+        type='button'
+        class='p-btn btn btn-sm btn-secondary retry-btn mt-2'
+        {{action 'retryLookup'}}
+      >
+        {{#if running}}
+          {{fa-icon icon='spinner-third' fixedWidth=true spin=true}}
+        {{else}}
+          Retry Search
+        {{/if}}
+      </button>
+      <div class='mt-1'>
+        <span class='p-footnote'>
+          You can retry your search by pressing the "Retry Search" button.</span>
+      </div>
+    {{/if}}
   </div>
 {{else}}
   {{#if details}}
