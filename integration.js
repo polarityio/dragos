@@ -31,7 +31,7 @@ const doLookup = async (entities, options, callback) => {
     const results = await Promise.all(
       map(async (entity) => {
         const data = await fetchApiData(entity, options);
-        return polarityResponse(entity, data);
+        return data;
       }, entities)
     );
     return callback(null, results);
@@ -44,8 +44,21 @@ const doLookup = async (entities, options, callback) => {
 
 const _fetchApiData = async (entity, options) => {
   try {
-    const results = await buildResults(entity, options);
-    return results;
+    const indicatorsResponse = entity.types.includes('custom.tag')
+      ? await getIndicatorsByTag(entity, options)
+      : await getIndicators(entity, options);
+
+    const { body } = indicatorsResponse;
+
+    if (indicatorsResponse.statusCode === 200) {
+      const indicatorsWithProducts = await addProductDataToIndicator(
+        body.indicators,
+        options
+      );
+      return polarityResponse(entity, indicatorsWithProducts);
+    }
+
+    return retryablePolarityResponse(entity);
   } catch (err) {
     let isConnectionReset = _.get(err, 'code', '') === 'ECONNRESET';
     if (isConnectionReset) {
@@ -67,18 +80,10 @@ const buildRequestOptions = (path, options) => {
   };
 };
 
-const buildResults = async (entity, options) => {
+const addProductDataToIndicator = async (indicators, options) => {
   let results = [];
-  let indicators;
 
   try {
-    if (entity.types.includes('custom.tag')) {
-      indicators = await getIndicatorsByTag(entity, options);
-    } else {
-      const entityTypes = transformType(entity, options);
-      indicators = await getIndicators(entityTypes, entity, options);
-    }
-
     for (const indicator of indicators) {
       const data = await getProductsForIndicator(indicator.value, options);
       const productData = _.orderBy(data, 'release_date', 'desc');
@@ -91,48 +96,6 @@ const buildResults = async (entity, options) => {
   }
 };
 
-const transformType = (entity) => {
-  let types = [];
-
-  for (const type of entity.types) {
-    switch (type) {
-      case 'domain':
-        types.push('domain');
-        break;
-      case 'ip':
-      case 'IPv4':
-      case 'IPv6':
-      case 'IP':
-        types.push('ip');
-        break;
-      case 'hash':
-      case 'SHA256':
-      case 'SHA1':
-      case 'MD5':
-        types.push(getHashType(entity));
-        break;
-      case 'custom.filename':
-        types.push('filename');
-        break;
-      case 'custom.hostname':
-        types.push('hostname');
-        break;
-    }
-  }
-
-  if (types.length === 0) {
-    throw new Error('Unknown type');
-  }
-
-  return types;
-};
-
-const getHashType = (entity) => {
-  if (entity.isMD5) return 'md5';
-  if (entity.isSHA1) return 'sha1';
-  if (entity.isSHA256) return 'sha256';
-};
-
 const getIndicatorsByTag = async (entity, options) => {
   try {
     const query = `${entity.value}`;
@@ -141,28 +104,21 @@ const getIndicatorsByTag = async (entity, options) => {
     const requestOptions = buildRequestOptions(uri, options);
     const response = await request(requestOptions);
 
-    return response.body.indicators;
+    return response;
   } catch (err) {
     throw err;
   }
 };
 
-const getIndicators = async (entityTypes, entity, options) => {
+const getIndicators = async (entity, options) => {
   try {
-    let response;
+    const query = `value=${entity.value}`;
+    const uri = `/api/v1/indicators?${query}`;
 
-    for (const type of entityTypes) {
-      const query = `value=${entity.value}&type=${type}`;
-      const uri = `/api/v1/indicators?${query}`;
+    const requestOptions = buildRequestOptions(uri, options);
+    const response = await request(requestOptions);
 
-      const requestOptions = buildRequestOptions(uri, options);
-      response = await request(requestOptions);
-
-      if (response.body.indicators.length > 0) {
-        return response.body.indicators;
-      }
-    }
-    return response.body.indicators;
+    return response;
   } catch (err) {
     throw err;
   }
@@ -178,7 +134,6 @@ const getProductsForIndicator = async (indicatorValue, options) => {
 
     return response.body.products;
   } catch (err) {
-    Logger.trace({ err });
     throw err;
   }
 };
@@ -187,15 +142,15 @@ const getProductsForIndicator = async (indicatorValue, options) => {
  * These functions return potential response objects the integration can return to the client
  */
 const polarityResponse = (entity, response) => {
+  Logger.trace({ RESPONSE: response.length });
   return {
     entity,
-    data:
-      response.length > 0
-        ? {
-            summary: getSummary(response),
-            details: response
-          }
-        : null
+    data: _.get(response, 'length')
+      ? {
+          summary: getSummary(response),
+          details: response
+        }
+      : null
   };
 };
 
@@ -241,10 +196,6 @@ const getSummary = (response) => {
     tags.push(`Indicators: ${response.length}`);
   }
 
-  if (response && response.length && response[0].productData) {
-    tags.push(`Reports: ${response[0].productData.length}`);
-  }
-
   return _.uniq(tags);
 };
 
@@ -260,7 +211,7 @@ const parseErrorToReadableJSON = (err) => {
     : err;
 };
 
-function validateOption(errors, options, optionName, errMessage) {
+function validateOption (errors, options, optionName, errMessage) {
   if (!(typeof options[optionName].value === 'string' && options[optionName].value)) {
     errors.push({
       key: optionName,
@@ -269,7 +220,7 @@ function validateOption(errors, options, optionName, errMessage) {
   }
 }
 
-function validateOptions(options, callback) {
+function validateOptions (options, callback) {
   let errors = [];
 
   validateOption(errors, options, 'url', 'You must provide an api url.');

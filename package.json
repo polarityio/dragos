@@ -3,14 +3,9 @@
   "version": "3.0.0-beta",
   "description": "",
   "main": "integration.js",
-  "directories": {
-    "test": "test"
-  },
   "scripts": {
-    "test": "npm run jest"
+    "test": "jest"
   },
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "jest": "^27.4.3",
     "nock": "^13.2.1"

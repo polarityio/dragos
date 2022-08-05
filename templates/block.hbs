@@ -28,8 +28,7 @@
         <li class='nav-item'>
           <a
             {{action 'changeTab' index 'indicator'}}
-            class='nav-link
-              {{if (or (eq indicator.__activeTab "indicator") (not activeTab)) "active"}}'
+            class='nav-link {{if (eq indicator.__activeTab "indicator") "active"}}'
             href='#'
           >
             Indicators
@@ -38,18 +37,17 @@
         <li class='nav-item'>
           <a
             {{action 'changeTab' index 'reports'}}
-            class='nav-link
-              {{if (or (eq indicator.__activeTab "reports") (not activeTab)) "active"}}'
+            class='nav-link {{if (eq indicator.__activeTab "reports") "active"}}'
             href='#'
           >
-            Reports
+            Reports({{indicator.productData.length}})
           </a>
         </li>
       </ul>
       {{#if (or (eq indicator.__activeTab 'indicator') (not indicator.__activeTab))}}
         <h1 class='p-title'>
           {{fa-icon 'info' fixedWidth=true}}
-          Indicator
+          {{indicator.value}}
         </h1>
         <div>
           {{#if indicator.severity}}
@@ -68,12 +66,6 @@
             <div>
               <span class='p-key'>Status: </span>
               <span class='p-value'>{{indicator.status}}</span>
-            </div>
-          {{/if}}
-          {{#if indicator.value}}
-            <div>
-              <span class='p-key'>Value: </span>
-              <span class='p-value'>{{indicator.value}}</span>
             </div>
           {{/if}}
           {{#if indicator.comment}}
@@ -112,7 +104,7 @@
 
           <div class='info'>
             {{#if indicator.attack_techniques}}
-              <h1 class="p-title">Attack Techniques:</h1>
+              <h1 class='p-title'>Attack Techniques:</h1>
               {{#each indicator.attack_techniques as |attack|}}
                 <span class='tag'>{{attack}}</span>
               {{/each}}
@@ -121,7 +113,7 @@
 
           <div class='info'>
             {{#if indicator.ics_attack_techniques}}
-              <h1 class="p-title">ICS Attack Techniques:</h1>
+              <h1 class='p-title'>ICS Attack Techniques:</h1>
               {{#each indicator.ics_attack_techniques as |attack|}}
                 <span class='tag'>{{attack}}</span>
               {{/each}}
@@ -130,7 +122,7 @@
 
           <div class='info'>
             {{#if indicator.pre_attack_techniques}}
-              <h1 class="p-title">Pre-Attack Techniques:</h1>
+              <h1 class='p-title'>Pre-Attack Techniques:</h1>
               {{#each indicator.pre_attack_techniques as |attack|}}
                 <span class='tag'>{{attack}}</span>
               {{/each}}
@@ -140,11 +132,14 @@
       {{/if}}
 
       {{#if (eq indicator.__activeTab 'reports')}}
-        <h1 class='p-title'>
-          {{fa-icon 'info' fixedWidth=true}}
-          Reports
-        </h1>
-        {{#each indicator.productData as |product|}}
+        {{#each indicator.productData as |product index|}}
+          {{#if (gt index 0)}}
+            <hr />
+          {{/if}}
+          <h1 class='p-title'>
+            {{fa-icon 'flag' fixedWidth=true}}
+            {{product.title}}
+          </h1>
           <div>
             {{#if (eq product.tlp_level 'WHITE')}}
               <div>
@@ -168,12 +163,6 @@
               <div>
                 <span class='p-key'>TLP: </span>
                 <span class='p-value' style='color:red'>RED</span>
-              </div>
-            {{/if}}
-            {{#if product.title}}
-              <div>
-                <span class='p-key'>Title: </span>
-                <span class='p-value'>{{product.title}}</span>
               </div>
             {{/if}}
             {{#if product.threat_level}}
@@ -206,10 +195,14 @@
 
               <span class='p-key'>Tags: </span>
               {{#each product.tags as |tag|}}
-                <div>
-                  <span class='tag'>[{{tag.text}}</span>
-                  <span class='tag'>{{tag.tag_type}}]</span>
-                </div>
+                <span class='category-pill'>
+                  <span class='category'>
+                    {{tag.tag_type}}
+                  </span>
+                  <span class='category-count'>
+                    {{tag.text}}
+                  </span>
+                </span>
               {{/each}}
             {{/if}}
           </div>
