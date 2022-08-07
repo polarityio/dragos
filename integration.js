@@ -142,7 +142,7 @@ const getProductsForIndicator = async (indicatorValue, options) => {
  * These functions return potential response objects the integration can return to the client
  */
 const polarityResponse = (entity, response) => {
-  Logger.trace({ RESPONSE: response.length });
+  Logger.trace({ responseLength: response.length });
   return {
     entity,
     data: _.get(response, 'length')
