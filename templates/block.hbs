@@ -28,7 +28,7 @@
         <li class='nav-item'>
           <a
             {{action 'changeTab' index 'indicator'}}
-            class='nav-link {{if (eq indicator.__activeTab "indicator") "active"}}'
+            class='nav-link {{if (or (eq indicator.__activeTab "indicator") (not indicator.__activeTab)) "active"}}'
             href='#'
           >
             Indicators
@@ -40,7 +40,7 @@
             class='nav-link {{if (eq indicator.__activeTab "reports") "active"}}'
             href='#'
           >
-            Reports({{indicator.productData.length}})
+            Reports ({{indicator.productData.length}})
           </a>
         </li>
       </ul>
