@@ -187,23 +187,25 @@
               </div>
 
               {{#if product.executive_summary}}
+                <h1 class='p-key'>Executive Summary: </h1>
                 <div class='executive-summary'>
-                  <span class='p-key'>Executive Summary: </span>
-                  <span class='p-block'>{{{product.executive_summary}}}</span>
+                  <span class='p-report'>{{{product.executive_summary}}}</span>
                 </div>
               {{/if}}
 
-              <span class='p-key'>Tags: </span>
-              {{#each product.tags as |tag|}}
-                <span class='category-pill'>
-                  <span class='category'>
-                    {{tag.tag_type}}
+              {{#if (gt product.tags.length 0)}}
+                <span class='p-key'>Tags: </span>
+                {{#each product.tags as |tag|}}
+                  <span class='category-pill'>
+                    <span class='category'>
+                      {{tag.tag_type}}
+                    </span>
+                    <span class='category-count'>
+                      {{tag.text}}
+                    </span>
                   </span>
-                  <span class='category-count'>
-                    {{tag.text}}
-                  </span>
-                </span>
-              {{/each}}
+                {{/each}}
+              {{/if}}
             {{/if}}
           </div>
         {{/each}}
