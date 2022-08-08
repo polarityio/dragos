@@ -28,11 +28,11 @@ module.exports = {
   customTypes: [
     {
       key: 'filename',
-      regex: /^.*\.(jpg|gif|doc|pdf|docx|db|dbsys|sys|exe|dll|file|virus|dontopen|zip|php|hta|bat|pem|txt|dat|msg|lnk|dotm|log|py|xls|ps1|vbe|VBE|css|CSS|site|store|world|email|group|tools|vip|services|rocks|download|online|network|vin|club|wiki|vbs|ini|top|gdn|bid|tech|html|cloud|win|energy|support|date|app|xyz|desi|software|kim)$/
+      regex: /^.{1,256}\.(jpg|gif|doc|pdf|docx|db|dbsys|sys|exe|dll|file|virus|dontopen|zip|php|hta|bat|pem|txt|dat|msg|lnk|dotm|log|py|xls|ps1|vbe|VBE|css|CSS|site|store|world|email|group|tools|vip|services|rocks|download|online|network|vin|club|wiki|vbs|ini|top|gdn|bid|tech|html|cloud|win|energy|support|date|app|xyz|desi|software|kim)$/
     },
     {
       key: 'hostname',
-      regex: /(.+?)(?=\.)/
+      regex: /^\w{1,40}$/
     },
     {
       key: 'tag',
@@ -85,7 +85,7 @@ module.exports = {
     rejectUnauthorized: true
   },
   logging: {
-    level: 'trace' //trace, debug, info, warn, error, fatal
+    level: 'info' //trace, debug, info, warn, error, fatal
   },
   /**
    * Options that are displayed to the user/admin in the Polarity integration user-interface.  Should be structured
