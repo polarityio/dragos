@@ -28,7 +28,11 @@
         <li class='nav-item'>
           <a
             {{action 'changeTab' index 'indicator'}}
-            class='nav-link {{if (or (eq indicator.__activeTab "indicator") (not indicator.__activeTab)) "active"}}'
+            class='nav-link
+              {{if
+                (or (eq indicator.__activeTab "indicator") (not indicator.__activeTab))
+                "active"
+              }}'
             href='#'
           >
             Indicators
@@ -44,6 +48,16 @@
           </a>
         </li>
       </ul>
+
+      {{#if
+        (and (gt indicator.productData.length 49) (eq indicator.__activeTab 'reports'))
+      }}
+        <div class='mt-1'>
+          <span class='p-footnote'>
+            Displaying the first 50 reports.</span>
+        </div>
+      {{/if}}
+
       {{#if (or (eq indicator.__activeTab 'indicator') (not indicator.__activeTab))}}
         <h1 class='p-title'>
           {{fa-icon 'info' fixedWidth=true}}
@@ -136,6 +150,11 @@
           {{#if (gt index 0)}}
             <hr />
           {{/if}}
+          <div class='p-link mt-2'>
+            <a href='https://portal.dragos.com/#/products/{{product.serial}}'>View Report
+              in Dragos
+              {{fa-icon 'external-link-square' class='external-link-icon'}}</a>
+          </div>
           <h1 class='p-title'>
             {{fa-icon 'flag' fixedWidth=true}}
             {{product.title}}
