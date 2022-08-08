@@ -126,7 +126,7 @@ const getIndicators = async (entity, options) => {
 
 const getProductsForIndicator = async (indicatorValue, options) => {
   try {
-    const query = `indicator=${indicatorValue}`;
+    const query = `indicator=${indicatorValue}&page_size=50`;
     const uri = `/api/v1/products?${query}`;
 
     const requestOptions = buildRequestOptions(uri, options);
