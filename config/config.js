@@ -98,7 +98,7 @@ module.exports = {
     {
       key: 'url',
       name: 'API Url',
-      description: 'URL for Dragos WorldView API.  The default value is \'https://portal.dragos.com\'',
+      description: 'URL for Dragos WorldView API.  The default value is \'https://portal.dragos.com\'.',
       default: 'https://portal.dragos.com',
       type: 'text',
       userCanEdit: false,
