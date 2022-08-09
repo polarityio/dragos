@@ -2,22 +2,15 @@
 
 polarity.export = PolarityComponent.extend({
   details: Ember.computed.alias('block.data.details'),
-  expandableTitleStates: {},
-  init() {
-    if (this.get('details').length === 1) this.set('expandableTitleStates', { 0: true });
-
-    this.get('details').forEach((job) => {
-      job.Job.Score = parseInt(job.Job.Score * 100);
-    });
-
-    this._super(...arguments);
-  },
   actions: {
+    changeTab: function (index, tabName) {
+      this.set(`details.${index}.__activeTab`, tabName);
+    },
     retryLookup: function () {
       this.set('running', true);
       this.set('errorMessage', '');
       const payload = {
-        action: 'RETRY_LOOKUP',
+        action: 'retryLookup',
         entity: this.get('block.entity')
       };
       this.sendIntegrationMessage(payload)
@@ -31,17 +24,6 @@ polarity.export = PolarityComponent.extend({
         .finally(() => {
           this.set('running', false);
         });
-    },
-    toggleExpandableTitle: function (index) {
-      const modifiedExpandableTitleStates = Object.assign(
-        {},
-        this.get('expandableTitleStates'),
-        {
-          [index]: !this.get('expandableTitleStates')[index]
-        }
-      );
-
-      this.set(`expandableTitleStates`, modifiedExpandableTitleStates);
     }
   }
 });

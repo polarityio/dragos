@@ -1,22 +1,18 @@
 {
-  "main": "./integration.js",
-  "name": "twinwave",
-  "version": "3.0.0-beta",
-  "private": true,
-  "jest": {
-    "automock": false,
-    "resetMocks": false
-  },
+  "name": "dragos",
+  "version": "3.1.0-beta",
+  "description": "",
+  "main": "integration.js",
   "scripts": {
     "test": "jest"
-  },
-  "dependencies": {
-    "bottleneck": "^2.19.5",
-    "lodash": "^4.17.21",
-    "request": "^2.88.2"
   },
   "devDependencies": {
     "jest": "^27.4.3",
     "nock": "^13.2.1"
+  },
+  "dependencies": {
+    "bottleneck": "^2.19.5",
+    "lodash": "^4.17.21",
+    "postman-request": "^2.88.1-postman.31"
   }
 }

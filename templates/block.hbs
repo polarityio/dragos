@@ -3,7 +3,6 @@
     <div class="alert alert-danger">
       <pre>{{details.errorMessage}}</pre>
     </div>
-
     {{#if (not (eq details.allowRetry false))}}
       <button
         type="button"
@@ -24,82 +23,211 @@
   </div>
 {{else}}
   {{#if details}}
-    {{#each details as |job index|}}
-      {{#if (gt index 0)}}
-        <hr />
+    {{#each details as |indicator index|}}
+      <ul class="nav nav-tabs mt-2">
+        <li class="nav-item">
+          <a
+            {{action "changeTab" index "indicator"}}
+            class="nav-link
+              {{if
+                (or (eq indicator.__activeTab "indicator") (not indicator.__activeTab))
+                "active"
+              }}"
+            href="#"
+          >
+            Indicators
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            {{action "changeTab" index "reports"}}
+            class="nav-link {{if (eq indicator.__activeTab "reports") "active"}}"
+            href="#"
+          >
+            Reports ({{indicator.productData.length}})
+          </a>
+        </li>
+      </ul>
+
+      {{#if
+        (and (gt indicator.productData.length 49) (eq indicator.__activeTab "reports"))
+      }}
+        <div class="mt-1">
+          <span class="p-footnote">
+            Displaying the first 50 reports.</span>
+        </div>
       {{/if}}
 
-      <div class="mt-1">
-        <a class="p-link" href="https://app.twinwave.io/job/{{job.Job.ID}}">View Job in
-          TwinWave
-          {{fa-icon icon="external-link-square" class="external-link-icon"}}</a>
-      </div>
-
-      <div class="score">
-        <span class="p-key">Consolidated Score: </span>
-        <span class="p-value">{{job.Job.Score}}</span>
-      </div>
-
-      {{#if (get expandableTitleStates index)}}
-        <a
-          href="#"
-          class="expandable-title"
-          {{on "click" (action "toggleExpandableTitle" index)}}
-        >
-          <span class="text">Resources Analyzed #{{index}}:</span>
-          {{fa-icon "angle-up"}}
-        </a>
-
-        {{#each job.Job.URLs as |url|}}
-          <div class="info-block">
+      {{#if (or (eq indicator.__activeTab "indicator") (not indicator.__activeTab))}}
+        <h1 class="p-title">
+          {{fa-icon "info" fixedWidth=true}}
+          {{indicator.value}}
+        </h1>
+        <div>
+          {{#if indicator.severity}}
             <div>
-              <span class="p-key">URL: </span>
-              <span class="p-value">{{url.URL}}</span>
+              <span class="p-key">Severity: </span>
+              <span class="p-value">{{indicator.severity}}</span>
             </div>
+          {{/if}}
+          {{#if indicator.confidence}}
             <div>
-              <span class="p-key">Hostname: </span>
-              <span class="p-value">{{url.Hostname}}</span>
+              <span class="p-key">Confidence: </span>
+              <span class="p-value">{{indicator.confidence}}</span>
             </div>
+          {{/if}}
+          {{#if indicator.status}}
             <div>
-              <span class="p-key">MD5: </span>
-              <span class="p-value">{{url.MD5}}</span>
+              <span class="p-key">Status: </span>
+              <span class="p-value">{{indicator.status}}</span>
             </div>
+          {{/if}}
+          {{#if indicator.comment}}
+            <div>
+              <span class="p-key">Comment: </span>
+              <span class="p-block">{{indicator.comment}}</span>
+            </div>
+          {{/if}}
+          {{#if indicator.first_seen}}
+            <div>
+              <span class="p-key">First Seen: </span>
+              <span class="p-value">{{moment-format
+                  indicator.first_seen
+                  timeZone=timezone
+                }}</span>
+            </div>
+          {{/if}}
+          {{#if indicator.last_seen}}
+            <div>
+              <span class="p-key">Last Seen: </span>
+              <span class="p-value">{{moment-format
+                  indicator.last_seen
+                  timeZone=timezone
+                }}</span>
+            </div>
+          {{/if}}
+          {{#if indicator.update_at}}
+            <div>
+              <span class="p-key">Value: </span>
+              <span class="p-value">{{moment-format
+                  indicator.updated_at
+                  timeZone=timezone
+                }}</span>
+            </div>
+          {{/if}}
+
+          <div class="info">
+            {{#if indicator.attack_techniques}}
+              <h1 class="p-title">Attack Techniques:</h1>
+              {{#each indicator.attack_techniques as |attack|}}
+                <span class="tag">{{attack}}</span>
+              {{/each}}
+            {{/if}}
+          </div>
+
+          <div class="info">
+            {{#if indicator.ics_attack_techniques}}
+              <h1 class="p-title">ICS Attack Techniques:</h1>
+              {{#each indicator.ics_attack_techniques as |attack|}}
+                <span class="tag">{{attack}}</span>
+              {{/each}}
+            {{/if}}
+          </div>
+
+          <div class="info">
+            {{#if indicator.pre_attack_techniques}}
+              <h1 class="p-title">Pre-Attack Techniques:</h1>
+              {{#each indicator.pre_attack_techniques as |attack|}}
+                <span class="tag">{{attack}}</span>
+              {{/each}}
+            {{/if}}
+          </div>
+        </div>
+      {{/if}}
+
+      {{#if (eq indicator.__activeTab "reports")}}
+        {{#each indicator.productData as |product index|}}
+          {{#if (gt index 0)}}
+            <hr />
+          {{/if}}
+          <div class="p-link mt-2">
+            <a href="https://portal.dragos.com/#/products/{{product.serial}}">View Report
+              in Dragos
+              {{fa-icon "external-link-square" class="external-link-icon"}}</a>
+          </div>
+          <h1 class="p-title">
+            {{fa-icon "flag" fixedWidth=true}}
+            {{product.title}}
+          </h1>
+          <div>
+            {{#if (eq product.tlp_level "WHITE")}}
+              <div>
+                <span class="p-key">TLP: </span>
+                <span class="p-value">WHITE</span>
+              </div>
+            {{/if}}
+            {{#if (eq product.tlp_level "GREEN")}}
+              <div>
+                <span class="p-key">TLP: </span>
+                <span class="p-value" style="color:green">GREEN</span>
+              </div>
+            {{/if}}
+            {{#if (eq product.tlp_level "AMBER")}}
+              <div>
+                <span class="p-key">TLP: </span>
+                <span class="p-value" style="color:orange">AMBER</span>
+              </div>
+            {{/if}}
+            {{#if (eq product.tlp_level "RED")}}
+              <div>
+                <span class="p-key">TLP: </span>
+                <span class="p-value" style="color:red">RED</span>
+              </div>
+            {{/if}}
+            {{#if product.threat_level}}
+              <div>
+                <span class="p-key">Threat: </span>
+                <span class="p-value">{{product.threat_level}}</span>
+              </div>
+            {{/if}}
+            {{#if product.type}}
+              <div>
+                <span class="p-key">Type: </span>
+                <span class="p-value">{{product.type}}</span>
+              </div>
+            {{/if}}
+            {{#if product.release_date}}
+              <div>
+                <span class="p-key">Release Date: </span>
+                <span class="p-value">{{moment-format
+                    product.release_date
+                    timeZone=timezone
+                  }}</span>
+              </div>
+
+              {{#if product.executive_summary}}
+                <h1 class="p-key">Executive Summary: </h1>
+                <div class="executive-summary">
+                  <span class="p-report">{{{product.executive_summary}}}</span>
+                </div>
+              {{/if}}
+
+              {{#if (gt product.tags.length 0)}}
+                <span class="p-key">Tags: </span>
+                {{#each product.tags as |tag|}}
+                  <span class="category-pill">
+                    <span class="category">
+                      {{tag.tag_type}}
+                    </span>
+                    <span class="category-count">
+                      {{tag.text}}
+                    </span>
+                  </span>
+                {{/each}}
+              {{/if}}
+            {{/if}}
           </div>
         {{/each}}
-
-        {{#each job.Job.Files as |file|}}
-          <div class="info-block">
-            <div>
-              <span class="p-key">Name: </span>
-              <span class="p-value">{{file.Name}}</span>
-            </div>
-            <div>
-              <span class="p-key">MD5: </span>
-              <span class="p-value">{{file.MD5}}</span>
-            </div>
-            <div>
-              <span class="p-key">SHA256: </span>
-              <span class="p-value">{{file.SHA256}}</span>
-            </div>
-            <div>
-              <span class="p-key">MimeType: </span>
-              <span class="p-value">{{file.MimeType}}</span>
-            </div>
-            <div>
-              <span class="p-key">Size: </span>
-              <span class="p-value">{{file.Size}}</span>
-            </div>
-          </div>
-        {{/each}}
-      {{else}}
-        <a
-          href="#"
-          class="expandable-title"
-          {{on "click" (action "toggleExpandableTitle" index)}}
-        >
-          <span class="text">Resources Analyzed #{{index}}:</span>
-          {{fa-icon "angle-down"}}
-        </a>
       {{/if}}
     {{/each}}
   {{/if}}

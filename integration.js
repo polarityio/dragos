@@ -1,16 +1,14 @@
 const _ = require('lodash');
 const Bottleneck = require('bottleneck/es5');
-const config = require('./config/config');
-const fs = require('fs');
 const { map } = require('lodash/fp');
-const request = require('request');
+const { setRequestWithDefaults } = require('./src/createRequestOptions');
 
 let limiter = null;
-let requestWithDefaults;
+let request;
 
 let Logger;
 
-const _setupLimiter = (options) => {
+let _setupLimiter = (options) => {
   limiter = new Bottleneck({
     maxConcurrent: Number.parseInt(options.maxConcurrent, 10), // no more than 5 lookups can be running at single time
     highWater: 100, // no more than 100 lookups can be queued up
@@ -19,76 +17,9 @@ const _setupLimiter = (options) => {
   });
 };
 
-function startup(logger) {
-  let defaults = {};
+const startup = (logger) => {
   Logger = logger;
-  const { cert, key, passphrase, ca, proxy, rejectUnauthorized } = config.request;
-  if (typeof cert === 'string' && cert.length > 0) {
-    defaults.cert = fs.readFileSync(cert);
-  }
-  if (typeof key === 'string' && key.length > 0) {
-    defaults.key = fs.readFileSync(key);
-  }
-  if (typeof passphrase === 'string' && passphrase.length > 0) {
-    defaults.passphrase = passphrase;
-  }
-  if (typeof ca === 'string' && ca.length > 0) {
-    defaults.ca = fs.readFileSync(ca);
-  }
-  if (typeof proxy === 'string' && proxy.length > 0) {
-    defaults.proxy = proxy;
-  }
-  if (typeof rejectUnauthorized === 'boolean') {
-    defaults.rejectUnauthorized = rejectUnauthorized;
-  }
-
-  let _requestWithDefaults = request.defaults(defaults);
-
-  requestWithDefaults = (requestOptions) =>
-    new Promise((resolve, reject) => {
-      _requestWithDefaults(requestOptions, (err, res, body) => {
-        if (err) return reject(err);
-        const response = { ...res, body };
-
-        try {
-          checkForStatusError(response);
-        } catch (err) {
-          reject(err);
-        }
-
-        resolve(response);
-      });
-    });
-}
-
-const buildRequestOptions = (entity, options, callback) => {
-  let fieldType;
-  let API_URL = options.url + '/v1/jobs/search';
-
-  switch (true) {
-    case entity.isURL:
-    case entity.isDomain:
-      fieldType = 'url';
-      break;
-    case entity.isSHA256:
-      fieldType = 'sha256';
-      break;
-    case entity.isMD5:
-      fieldType = 'md5';
-    default:
-      undefined;
-  }
-
-  if (fieldType) {
-    return (requestOptions = {
-      method: 'GET',
-      url: API_URL + `?field=${fieldType}&type=substring&term=${entity.value}`,
-      headers: {
-        'X-Api-Key': options.apiKey
-      },
-      json: true
-    });
-  }
+  request = setRequestWithDefaults(Logger);
 };
 
 const doLookup = async (entities, options, callback) => {
@@ -97,79 +28,134 @@ const doLookup = async (entities, options, callback) => {
   const fetchApiData = limiter.wrap(_fetchApiData);
 
   try {
-    const lookupResults = await Promise.all(
-      map(async (entity) => await fetchApiData(entity, options), entities)
+    const results = await Promise.all(
+      map(async (entity) => {
+        const data = await fetchApiData(entity, options);
+        return data;
+      }, entities)
     );
-
-    return callback(null, lookupResults);
-  } catch (err) {
+    return callback(null, results);
+  } catch (error) {
+    const err = parseErrorToReadableJSON(error);
+    Logger.error({ err }, 'Err in doLookup');
     return callback(err);
   }
 };
 
 const _fetchApiData = async (entity, options) => {
   try {
-    const requestOptions = buildRequestOptions(entity, options);
+    const indicatorsResponse = entity.types.includes('custom.tag')
+      ? await getIndicatorsByTag(entity, options)
+      : await getIndicators(entity, options);
 
-    Logger.trace({ requestOptions }, 'REQUEST_OPTIONS');
+    const { body } = indicatorsResponse;
 
-    response = await requestWithDefaults(requestOptions);
+    if (indicatorsResponse.statusCode === 200) {
+      const indicatorsWithProducts = await addProductDataToIndicator(
+        body.indicators,
+        options
+      );
+      return polarityResponse(entity, indicatorsWithProducts);
+    }
 
-    Logger.trace({ response }, 'REQUEST_RESPONSE');
-
-    const apiData = (fetchResponses[response.statusCode] || retryablePolarityResponse)(
-      entity,
-      response
-    );
-
-    Logger.trace({ apiData }, 'LOOKUP_RESULT');
-    return apiData;
+    return retryablePolarityResponse(entity);
   } catch (err) {
-    const isConnectionReset = _.get(err, 'code', '') === 'ECONNRESET';
-    if (isConnectionReset) return retryablePolarityResponse(entity);
-    else throw polarityError(err);
+    let isConnectionReset = _.get(err, 'code', '') === 'ECONNRESET';
+    if (isConnectionReset) {
+      return retryablePolarityResponse(entity);
+    }
+    throw err;
   }
 };
 
-const checkForStatusError = (response) => {
-  const statusCode = response.statusCode;
+const buildRequestOptions = (path, options) => {
+  return {
+    method: 'GET',
+    uri: options.url + path,
+    headers: {
+      'API-Token': options.apiToken,
+      'API-Secret': options.apiKey
+    },
+    json: true
+  };
+};
 
-  Logger.trace({ STATUS_CODE: statusCode });
+const addProductDataToIndicator = async (indicators, options) => {
+  let results = [];
 
-  if (![200, 429, 500, 502, 504].includes(statusCode)) {
-    const requestError = Error('Request Error');
-    requestError.status = statusCode;
-    requestError.description = JSON.stringify(response.body);
-    requestError.requestOptions = requestOptions;
-    throw requestError;
+  try {
+    for (const indicator of indicators) {
+      const data = await getProductsForIndicator(indicator.value, options);
+      const productData = _.orderBy(data, 'release_date', 'desc');
+      const indicatorWithProducts = Object.assign({}, indicator, { productData });
+      results.push(indicatorWithProducts);
+    }
+    return results;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getIndicatorsByTag = async (entity, options) => {
+  try {
+    const query = `${entity.value}`;
+    const uri = `/api/v1/indicators?tags=${query}&page_size=10`;
+
+    const requestOptions = buildRequestOptions(uri, options);
+    const response = await request(requestOptions);
+
+    return response;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getIndicators = async (entity, options) => {
+  try {
+    const query = `value=${entity.value}`;
+    const uri = `/api/v1/indicators?${query}`;
+
+    const requestOptions = buildRequestOptions(uri, options);
+    const response = await request(requestOptions);
+
+    return response;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getProductsForIndicator = async (indicatorValue, options) => {
+  try {
+    const query = `indicator=${indicatorValue}&page_size=50`;
+    const uri = `/api/v1/products?${query}`;
+
+    const requestOptions = buildRequestOptions(uri, options);
+    const response = await request(requestOptions);
+
+    return response.body.products;
+  } catch (err) {
+    throw err;
   }
 };
 
 /**
  * These functions return potential response objects the integration can return to the client
  */
-const polarityError = (err) => ({
-  detail: err.message || 'Unknown Error',
-  error: err
-});
+const polarityResponse = (entity, response) => {
+  Logger.trace({ responseLength: response.length });
+  return {
+    entity,
+    data: _.get(response, 'length')
+      ? {
+          summary: getSummary(response),
+          details: response
+        }
+      : null
+  };
+};
 
-const emptyResponse = (entity) => ({
-  entity,
-  data: null
-});
-
-const polarityResponse = (entity, { body }) => ({
-  entity,
-  data: body.Jobs.length
-    ? {
-        summary: getSummary(body),
-        details: body.Jobs
-      }
-    : null
-});
-
-const retryablePolarityResponse = (entity) => [
-  {
+const retryablePolarityResponse = (entity) => {
+  return {
     entity,
     isVolatile: true,
     data: {
@@ -177,21 +163,15 @@ const retryablePolarityResponse = (entity) => [
       details: {
         summaryTag: 'Lookup limit reached',
         errorMessage:
-          'A temporary TwinWave API search limit was reached. You can retry your search by pressing the "Retry Search" button.'
+          'A temporary Dragos API search limit was reached. You can retry your search by pressing the "Retry Search" button.'
       }
     }
-  }
-];
-
-const fetchResponses = {
-  200: polarityResponse,
-  400: emptyResponse,
-  403: emptyResponse
+  };
 };
 
 const onMessage = (payload, options, callback) => {
   switch (payload.action) {
-    case 'RETRY_LOOKUP':
+    case 'retryLookup':
       doLookup([payload.entity], options, (err, lookupResults) => {
         if (err) {
           Logger.error({ err }, 'Error retrying lookup');
@@ -209,25 +189,29 @@ const onMessage = (payload, options, callback) => {
   }
 };
 
-const getSummary = (data) => {
+const getSummary = (response) => {
   let tags = [];
 
-  if (Object.keys(data.Jobs).length > 0) {
-    const jobs = data.Jobs.length;
-    tags.push(`Total Jobs: ${jobs}`);
-
-    for (const job of data.Jobs) {
-      tags.push(`Score: ${parseInt(job.Job.Score * 100)}`);
-      if (job.Job.Verdict.length) {
-        tags.push(`Verdict: ${job.Job.Verdict}`);
-      }
-    }
+  if (response && response.length > 0) {
+    tags.push(`Indicators: ${response.length}`);
   }
 
   return _.uniq(tags);
 };
 
-function validateOption(errors, options, optionName, errMessage) {
+const parseErrorToReadableJSON = (err) => {
+  return err instanceof Error
+    ? {
+        ...err,
+        name: err.name,
+        message: err.message,
+        stack: err.stack,
+        detail: err.message ? err.message : 'Unexpected error encountered'
+      }
+    : err;
+};
+
+function validateOption (errors, options, optionName, errMessage) {
   if (!(typeof options[optionName].value === 'string' && options[optionName].value)) {
     errors.push({
       key: optionName,
@@ -236,7 +220,7 @@ function validateOption(errors, options, optionName, errMessage) {
   }
 }
 
-function validateOptions(options, callback) {
+function validateOptions (options, callback) {
   let errors = [];
 
   validateOption(errors, options, 'url', 'You must provide an api url.');
