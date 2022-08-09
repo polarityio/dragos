@@ -6,6 +6,8 @@ The Dragos Polarity Integration searches the Dragos WorldView API for incidents 
 
 To learn more about Dragos, please visit https://www.dragos.com/
 
+<img width="350" alt="Integration Example" src="./assets/dragos.png">
+
 ## Dragos Integration Options
 
 ### Dragos API Url

@@ -1,22 +1,22 @@
 {{#if details.errorMessage}}
-  <div class='mt-2'>
-    <div class='alert alert-danger'>
+  <div class="mt-2">
+    <div class="alert alert-danger">
       <pre>{{details.errorMessage}}</pre>
     </div>
     {{#if (not (eq details.allowRetry false))}}
       <button
-        type='button'
-        class='p-btn btn btn-sm btn-secondary retry-btn mt-2'
-        {{action 'retryLookup'}}
+        type="button"
+        class="p-btn btn btn-sm btn-secondary retry-btn mt-2"
+        {{action "retryLookup"}}
       >
         {{#if running}}
-          {{fa-icon icon='spinner-third' fixedWidth=true spin=true}}
+          {{fa-icon icon="spinner-third" fixedWidth=true spin=true}}
         {{else}}
           Retry Search
         {{/if}}
       </button>
-      <div class='mt-1'>
-        <span class='p-footnote'>
+      <div class="mt-1">
+        <span class="p-footnote">
           You can retry your search by pressing the "Retry Search" button.</span>
       </div>
     {{/if}}
@@ -24,25 +24,25 @@
 {{else}}
   {{#if details}}
     {{#each details as |indicator index|}}
-      <ul class='nav nav-tabs mt-2'>
-        <li class='nav-item'>
+      <ul class="nav nav-tabs mt-2">
+        <li class="nav-item">
           <a
-            {{action 'changeTab' index 'indicator'}}
-            class='nav-link
+            {{action "changeTab" index "indicator"}}
+            class="nav-link
               {{if
                 (or (eq indicator.__activeTab "indicator") (not indicator.__activeTab))
                 "active"
-              }}'
-            href='#'
+              }}"
+            href="#"
           >
             Indicators
           </a>
         </li>
-        <li class='nav-item'>
+        <li class="nav-item">
           <a
-            {{action 'changeTab' index 'reports'}}
-            class='nav-link {{if (eq indicator.__activeTab "reports") "active"}}'
-            href='#'
+            {{action "changeTab" index "reports"}}
+            class="nav-link {{if (eq indicator.__activeTab "reports") "active"}}"
+            href="#"
           >
             Reports ({{indicator.productData.length}})
           </a>
@@ -50,48 +50,48 @@
       </ul>
 
       {{#if
-        (and (gt indicator.productData.length 49) (eq indicator.__activeTab 'reports'))
+        (and (gt indicator.productData.length 49) (eq indicator.__activeTab "reports"))
       }}
-        <div class='mt-1'>
-          <span class='p-footnote'>
+        <div class="mt-1">
+          <span class="p-footnote">
             Displaying the first 50 reports.</span>
         </div>
       {{/if}}
 
-      {{#if (or (eq indicator.__activeTab 'indicator') (not indicator.__activeTab))}}
-        <h1 class='p-title'>
-          {{fa-icon 'info' fixedWidth=true}}
+      {{#if (or (eq indicator.__activeTab "indicator") (not indicator.__activeTab))}}
+        <h1 class="p-title">
+          {{fa-icon "info" fixedWidth=true}}
           {{indicator.value}}
         </h1>
         <div>
           {{#if indicator.severity}}
             <div>
-              <span class='p-key'>Severity: </span>
-              <span class='p-value'>{{indicator.severity}}</span>
+              <span class="p-key">Severity: </span>
+              <span class="p-value">{{indicator.severity}}</span>
             </div>
           {{/if}}
           {{#if indicator.confidence}}
             <div>
-              <span class='p-key'>Confidence: </span>
-              <span class='p-value'>{{indicator.confidence}}</span>
+              <span class="p-key">Confidence: </span>
+              <span class="p-value">{{indicator.confidence}}</span>
             </div>
           {{/if}}
           {{#if indicator.status}}
             <div>
-              <span class='p-key'>Status: </span>
-              <span class='p-value'>{{indicator.status}}</span>
+              <span class="p-key">Status: </span>
+              <span class="p-value">{{indicator.status}}</span>
             </div>
           {{/if}}
           {{#if indicator.comment}}
             <div>
-              <span class='p-key'>Comment: </span>
-              <span class='p-block'>{{indicator.comment}}</span>
+              <span class="p-key">Comment: </span>
+              <span class="p-block">{{indicator.comment}}</span>
             </div>
           {{/if}}
           {{#if indicator.first_seen}}
             <div>
-              <span class='p-key'>First Seen: </span>
-              <span class='p-value'>{{moment-format
+              <span class="p-key">First Seen: </span>
+              <span class="p-value">{{moment-format
                   indicator.first_seen
                   timeZone=timezone
                 }}</span>
@@ -99,8 +99,8 @@
           {{/if}}
           {{#if indicator.last_seen}}
             <div>
-              <span class='p-key'>Last Seen: </span>
-              <span class='p-value'>{{moment-format
+              <span class="p-key">Last Seen: </span>
+              <span class="p-value">{{moment-format
                   indicator.last_seen
                   timeZone=timezone
                 }}</span>
@@ -108,118 +108,118 @@
           {{/if}}
           {{#if indicator.update_at}}
             <div>
-              <span class='p-key'>Value: </span>
-              <span class='p-value'>{{moment-format
+              <span class="p-key">Value: </span>
+              <span class="p-value">{{moment-format
                   indicator.updated_at
                   timeZone=timezone
                 }}</span>
             </div>
           {{/if}}
 
-          <div class='info'>
+          <div class="info">
             {{#if indicator.attack_techniques}}
-              <h1 class='p-title'>Attack Techniques:</h1>
+              <h1 class="p-title">Attack Techniques:</h1>
               {{#each indicator.attack_techniques as |attack|}}
-                <span class='tag'>{{attack}}</span>
+                <span class="tag">{{attack}}</span>
               {{/each}}
             {{/if}}
           </div>
 
-          <div class='info'>
+          <div class="info">
             {{#if indicator.ics_attack_techniques}}
-              <h1 class='p-title'>ICS Attack Techniques:</h1>
+              <h1 class="p-title">ICS Attack Techniques:</h1>
               {{#each indicator.ics_attack_techniques as |attack|}}
-                <span class='tag'>{{attack}}</span>
+                <span class="tag">{{attack}}</span>
               {{/each}}
             {{/if}}
           </div>
 
-          <div class='info'>
+          <div class="info">
             {{#if indicator.pre_attack_techniques}}
-              <h1 class='p-title'>Pre-Attack Techniques:</h1>
+              <h1 class="p-title">Pre-Attack Techniques:</h1>
               {{#each indicator.pre_attack_techniques as |attack|}}
-                <span class='tag'>{{attack}}</span>
+                <span class="tag">{{attack}}</span>
               {{/each}}
             {{/if}}
           </div>
         </div>
       {{/if}}
 
-      {{#if (eq indicator.__activeTab 'reports')}}
+      {{#if (eq indicator.__activeTab "reports")}}
         {{#each indicator.productData as |product index|}}
           {{#if (gt index 0)}}
             <hr />
           {{/if}}
-          <div class='p-link mt-2'>
-            <a href='https://portal.dragos.com/#/products/{{product.serial}}'>View Report
+          <div class="p-link mt-2">
+            <a href="https://portal.dragos.com/#/products/{{product.serial}}">View Report
               in Dragos
-              {{fa-icon 'external-link-square' class='external-link-icon'}}</a>
+              {{fa-icon "external-link-square" class="external-link-icon"}}</a>
           </div>
-          <h1 class='p-title'>
-            {{fa-icon 'flag' fixedWidth=true}}
+          <h1 class="p-title">
+            {{fa-icon "flag" fixedWidth=true}}
             {{product.title}}
           </h1>
           <div>
-            {{#if (eq product.tlp_level 'WHITE')}}
+            {{#if (eq product.tlp_level "WHITE")}}
               <div>
-                <span class='p-key'>TLP: </span>
-                <span class='p-value'>WHITE</span>
+                <span class="p-key">TLP: </span>
+                <span class="p-value">WHITE</span>
               </div>
             {{/if}}
-            {{#if (eq product.tlp_level 'GREEN')}}
+            {{#if (eq product.tlp_level "GREEN")}}
               <div>
-                <span class='p-key'>TLP: </span>
-                <span class='p-value' style='color:green'>GREEN</span>
+                <span class="p-key">TLP: </span>
+                <span class="p-value" style="color:green">GREEN</span>
               </div>
             {{/if}}
-            {{#if (eq product.tlp_level 'AMBER')}}
+            {{#if (eq product.tlp_level "AMBER")}}
               <div>
-                <span class='p-key'>TLP: </span>
-                <span class='p-value' style='color:orange'>AMBER</span>
+                <span class="p-key">TLP: </span>
+                <span class="p-value" style="color:orange">AMBER</span>
               </div>
             {{/if}}
-            {{#if (eq product.tlp_level 'RED')}}
+            {{#if (eq product.tlp_level "RED")}}
               <div>
-                <span class='p-key'>TLP: </span>
-                <span class='p-value' style='color:red'>RED</span>
+                <span class="p-key">TLP: </span>
+                <span class="p-value" style="color:red">RED</span>
               </div>
             {{/if}}
             {{#if product.threat_level}}
               <div>
-                <span class='p-key'>Threat: </span>
-                <span class='p-value'>{{product.threat_level}}</span>
+                <span class="p-key">Threat: </span>
+                <span class="p-value">{{product.threat_level}}</span>
               </div>
             {{/if}}
             {{#if product.type}}
               <div>
-                <span class='p-key'>Type: </span>
-                <span class='p-value'>{{product.type}}</span>
+                <span class="p-key">Type: </span>
+                <span class="p-value">{{product.type}}</span>
               </div>
             {{/if}}
             {{#if product.release_date}}
               <div>
-                <span class='p-key'>Release Date: </span>
-                <span class='p-value'>{{moment-format
+                <span class="p-key">Release Date: </span>
+                <span class="p-value">{{moment-format
                     product.release_date
                     timeZone=timezone
                   }}</span>
               </div>
 
               {{#if product.executive_summary}}
-                <h1 class='p-key'>Executive Summary: </h1>
-                <div class='executive-summary'>
-                  <span class='p-report'>{{{product.executive_summary}}}</span>
+                <h1 class="p-key">Executive Summary: </h1>
+                <div class="executive-summary">
+                  <span class="p-report">{{{product.executive_summary}}}</span>
                 </div>
               {{/if}}
 
               {{#if (gt product.tags.length 0)}}
-                <span class='p-key'>Tags: </span>
+                <span class="p-key">Tags: </span>
                 {{#each product.tags as |tag|}}
-                  <span class='category-pill'>
-                    <span class='category'>
+                  <span class="category-pill">
+                    <span class="category">
                       {{tag.tag_type}}
                     </span>
-                    <span class='category-count'>
+                    <span class="category-count">
                       {{tag.text}}
                     </span>
                   </span>
