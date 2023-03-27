@@ -1,4 +1,5 @@
 {
+  "polarityIntegrationUuid": "fea27140-cce1-11ed-aeee-075d3490155d",
   "name": "Dragos",
   "acronym": "DRG",
   "description": "The Dragos Polarity Integration searches the Dragos WorldView API for information on custom Filenames, Hostnames, Domains, URLs, IPs, SHA1, SHA256 and MD5 hashes.",
