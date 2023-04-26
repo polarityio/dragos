@@ -1,6 +1,6 @@
 {
   "name": "dragos",
-  "version": "3.1.2-beta",
+  "version": "3.1.2",
   "description": "",
   "main": "integration.js",
   "private": true,
